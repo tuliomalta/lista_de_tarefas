@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Lista de Tarefas</title>
+  <style>
+    /* CSS */
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    #task-list {
+      margin-top: 20px;
+    }
+
+    .task {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px;
+      border: 1px solid #ccc;
+      margin-bottom: 5px;
+    }
+
+    .high-cost {
+      background-color: yellow;
+    }
+
+    button {
+      padding: 5px 10px;
+      margin: 5px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+<h1>Lista de Tarefas</h1>
+<div id="task-list"></div>
+<button onclick="abrirFormInclusao()">Incluir Tarefa</button>
+
+<script>
+  // JavaScript
+  const baseUrl = '/listaTarefas/tarefas';
+
+  function carregarTarefas() {
+    fetch(baseUrl)
+            .then(response => response.json())
+            .then(tarefas => {
+              const taskList = document.getElementById('task-list');
+              taskList.innerHTML = '';
+              tarefas.forEach(tarefa => {
+                const taskDiv = document.createElement('div');
+                taskDiv.className = 'task';
+                if (tarefa.custo >= 1000) {
+                  taskDiv.classList.add('high-cost');
+                }
+                taskDiv.innerHTML = `
+                            <span>${tarefa.nome} - R$${tarefa.custo} - ${tarefa.dataLimite}</span>
+                            <button onclick="editarTarefa(${tarefa.id})">Editar</button>
+                            <button onclick="excluirTarefa(${tarefa.id})">Excluir</button>
+                        `;
+                taskList.appendChild(taskDiv);
+              });
+            });
+  }
+
+  function abrirFormInclusao() {
+    const nome = prompt("Nome da Tarefa:");
+    const custo = parseFloat(prompt("Custo da Tarefa (R$):"));
+    const dataLimite = prompt("Data Limite (yyyy-mm-dd):");
+
+    incluirTarefa({ nome, custo, dataLimite });
+  }
+
+  function incluirTarefa(tarefa) {
+    fetch(baseUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(tarefa)
+    }).then(response => {
+      if (response.ok) {
+        carregarTarefas();
+      } else {
+        alert("Erro ao incluir tarefa. Verifique os dados e tente novamente.");
+      }
+    });
+  }
+
+  function editarTarefa(id) {
+    const nome = prompt("Novo Nome da Tarefa:");
+    const custo = parseFloat(prompt("Novo Custo da Tarefa (R$):"));
+    const dataLimite = prompt("Nova Data Limite (yyyy-mm-dd):");
+
+    fetch(`${baseUrl}/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nome, custo, dataLimite })
+    }).then(response => {
+      if (response.ok) {
+        carregarTarefas();
+      } else {
+        alert("Erro ao editar tarefa. O nome pode já existir ou houve outro problema.");
+      }
+    });
+  }
+
+  function excluirTarefa(id) {
+    if (confirm("Tem certeza que deseja excluir esta tarefa?")) {
+      fetch(`${baseUrl}/${id}`, { method: 'DELETE' })
+              .then(response => {
+                if (response.ok) {
+                  carregarTarefas();
+                } else {
+                  alert("Erro ao excluir tarefa.");
+                }
+              });
+    }
+  }
+
+  // Carrega as tarefas ao iniciar a página
+  carregarTarefas();
+</script>
+</body>
+</html>
